@@ -11,7 +11,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -36,6 +35,7 @@ class DogFinderPage extends StatefulWidget {
 
 class _DogFinderPageState extends State<DogFinderPage> {
   String? imageSrc;
+  String? errorText;
   Map<String, List<String>> dogBreeds = {};
   String? selectedBreed;
   String? selectedSubBreed;
@@ -69,74 +69,130 @@ class _DogFinderPageState extends State<DogFinderPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: separatedChildren(
-            0,
-            [
-              Image.asset(
-                'DefaultDog.jpg',
-              ),
-              SizedBox(
-                width: inputWidth,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: separatedChildren(16, [
-                    DropdownMenu(
-                      errorText:
-                          validBreed || breedTextController.value.text.isEmpty
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: separatedChildren(
+                0,
+                [
+                  Image.asset(
+                    'DefaultDog.jpg',
+                  ),
+                  SizedBox(
+                    width: inputWidth,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: separatedChildren(16, [
+                        DropdownMenu(
+                          errorText: validBreed ||
+                                  breedTextController.value.text.isEmpty
                               ? null
                               : 'Please select a valid breed',
-                      controller: breedTextController,
-                      onSelected: (breed) {
-                        setState(() {
-                          selectedBreed = breed;
-                        });
-                      },
-                      width: inputWidth,
-                      enableFilter: true,
-                      dropdownMenuEntries: buildBreeds(),
-                      label: const Text(
-                        'Breed',
-                      ),
-                    ),
-                    DropdownMenu(
-                      onSelected: (subBreed) {
-                        setState(() {
-                          selectedSubBreed = subBreed;
-                        });
-                      },
-                      controller: subBreedTextController,
-                      enabled: subBreedOptions.isNotEmpty,
-                      errorText: validSubBreed
-                          ? null
-                          : 'Please select a valid sub-breed',
-                      // inputDecorationTheme: subBreedOptions.isEmpty || subBreedTextController.value.text.isNotEmpty ? null : InputDecorationTheme(border: Border.all(color: Colors.red))),
-                      width: inputWidth,
-                      enableFilter: true,
-                      dropdownMenuEntries: subBreedOptions,
-                      label: const Text(
-                        'Sub-breed',
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: validBreed && validSubBreed ? () {} : null,
-                      child: const Padding(
-                        padding: EdgeInsets.all(
-                          16,
+                          controller: breedTextController,
+                          onSelected: (breed) {
+                            setState(() {
+                              selectedBreed = breed;
+                            });
+                          },
+                          width: inputWidth,
+                          enableFilter: true,
+                          dropdownMenuEntries: buildBreeds(),
+                          label: const Text(
+                            'Breed',
+                          ),
                         ),
-                        child: Text('Dog searcher'),
+                        DropdownMenu(
+                          onSelected: (subBreed) {
+                            setState(() {
+                              selectedSubBreed = subBreed;
+                            });
+                          },
+                          controller: subBreedTextController,
+                          enabled: subBreedOptions.isNotEmpty,
+                          errorText: validSubBreed
+                              ? null
+                              : 'Please select a valid sub-breed',
+                          width: inputWidth,
+                          enableFilter: true,
+                          dropdownMenuEntries: subBreedOptions,
+                          label: const Text(
+                            'Sub-breed',
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: validBreed && validSubBreed ? () {} : null,
+                          child: const Padding(
+                            padding: EdgeInsets.all(
+                              16,
+                            ),
+                            child: Text('Dog searcher'),
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Visibility(
+            visible: errorText != null,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: ColoredBox(
+                color: Colors.red.withOpacity(0.2),
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white),
+                    child: SizedBox(
+                      width: 250,
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(errorText ?? ''),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    errorText = null;
+                                  });
+                                },
+                                child: const Text('Reset'))
+                          ],
+                        ),
                       ),
                     ),
-                  ]),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+            // child: Center(
+            //   child: SizedBox(
+            //     width: 300,
+            //     child: Column(
+            //       children: [
+            //         Text(errorText ?? ''),
+            //         Center(
+            //           child: ElevatedButton(
+            //             onPressed: () {},
+            //             child: const Text('Reset'),
+            //           ),
+            //         )
+            //       ],
+            //     ),
+            //   ),
+            // ),
+          )
+        ],
       ),
       // floatingActionButton: FloatingActionButton(
       //   onPressed: _incrementCounter,
@@ -159,8 +215,11 @@ class _DogFinderPageState extends State<DogFinderPage> {
   List<DropdownMenuEntry> buildSubBreeds() {
     if (selectedBreed == null) return [];
     if (dogBreeds[selectedBreed] == null) return [];
+    if (dogBreeds[selectedBreed]!.isEmpty) return [];
 
-    List<DropdownMenuEntry> entries = [];
+    List<DropdownMenuEntry> entries = [
+      const DropdownMenuEntry(value: null, label: 'Any')
+    ];
     for (var breed in dogBreeds[selectedBreed]!) {
       entries.add(
         DropdownMenuEntry(value: breed, label: breed),
@@ -198,8 +257,34 @@ class _DogFinderPageState extends State<DogFinderPage> {
       for (var entry in (jsonDecode(response.body)["message"] as Map).entries) {
         breeds[entry.key] = (entry.value as List).cast<String>();
       }
+    } else {
+      errorText = 'Failed to fetch dog breeds';
+    }
+    dogBreeds = breeds;
+  }
+
+  Future fetchDog(String? breed, String? subBreed) async {
+    String url = 'https://dog.ceo/api/breeds/image/random';
+
+    if (breed != null) {
+      url = 'https://dog.ceo/api/breed/$breed/images/random';
     }
 
-    dogBreeds = breeds;
+    if (subBreed != null) {
+      url = 'https://dog.ceo/api/breed/$breed/$subBreed/images/random';
+    }
+
+    final response =
+        await http.get(Uri.parse('https://dog.ceo/api/breeds/list/all'));
+
+    if (response.statusCode == 200) {
+      setState(() {
+        imageSrc = jsonDecode(response.body)["message"];
+      });
+    } else {
+      setState(() {
+        errorText = 'Failed to fetch image';
+      });
+    }
   }
 }
