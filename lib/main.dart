@@ -34,13 +34,19 @@ class DogFinderPage extends StatefulWidget {
 }
 
 class _DogFinderPageState extends State<DogFinderPage> {
-  String? imageSrc;
+  String? dogSrc;
+  List<String> linkList = [];
   String? errorText;
+  bool loading = true;
   Map<String, List<String>> dogBreeds = {};
   String? selectedBreed;
   String? selectedSubBreed;
+  String selectedResponseType = 'random';
+  bool get randomImage => selectedResponseType == 'random';
+  // bool randomImage = true; // false is image list
   TextEditingController breedTextController = TextEditingController();
   TextEditingController subBreedTextController = TextEditingController();
+  TextEditingController responseType = TextEditingController();
 
   @override
   void initState() {
@@ -56,9 +62,10 @@ class _DogFinderPageState extends State<DogFinderPage> {
     List<DropdownMenuEntry> breedOptions = buildBreeds();
     List<DropdownMenuEntry> subBreedOptions = buildSubBreeds();
 
-    bool validBreed = breedOptions
-        .where((element) => element.value == breedTextController.text)
-        .isNotEmpty;
+    bool validBreed = selectedBreed == null ||
+        breedOptions
+            .where((element) => element.value == breedTextController.text)
+            .isNotEmpty;
     bool validSubBreed = subBreedOptions.isEmpty ||
         subBreedOptions
             .where((element) => element.value == subBreedTextController.text)
@@ -75,11 +82,74 @@ class _DogFinderPageState extends State<DogFinderPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: separatedChildren(
-                0,
+                8,
                 [
-                  Image.asset(
-                    'DefaultDog.jpg',
+                  FocusableActionDetector(
+                    onFocusChange: (focused) {
+                      if (focused) {
+                        setState(() {
+                          responseType.text = '';
+                        });
+                      }
+                    },
+                    child: DropdownMenu(
+                      onSelected: (respType) {
+                        setState(() {
+                          if (respType != null) selectedResponseType = respType;
+                          dogSrc = null;
+                          linkList = [];
+                        });
+                      },
+                      controller: responseType,
+                      width: inputWidth,
+                      dropdownMenuEntries: const [
+                        DropdownMenuEntry(value: 'random', label: 'Random'),
+                        DropdownMenuEntry(value: 'list', label: 'List'),
+                      ],
+                      label: const Text(
+                        'Response Type',
+                      ),
+                      initialSelection: selectedResponseType,
+                    ),
                   ),
+                  SizedBox(
+                    width: 500,
+                    height: 500,
+                    child: randomImage
+                        ? dogSrc == null
+                            ? Image.asset(
+                                'DefaultDog.jpg',
+                              )
+                            : Image.network(dogSrc!)
+                        : Center(
+                            child: linkList.isNotEmpty
+                                ? ListView.builder(
+                                    itemBuilder: (ctx, i) {
+                                      return Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            0, 2, 0, 2),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedResponseType = 'random';
+                                              dogSrc = linkList[i];
+                                            });
+                                          },
+                                          child: Text(
+                                            linkList[i],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    itemCount: linkList.length,
+                                  )
+                                : const Text('No links yet'),
+                          ),
+                  ),
+                  dogSrc == null
+                      ? Container()
+                      : Text(
+                          '${selectedSubBreed != null ? '$selectedSubBreed, ' : ''}${selectedBreed ?? ''}'),
                   SizedBox(
                     width: inputWidth,
                     child: Column(
@@ -87,44 +157,78 @@ class _DogFinderPageState extends State<DogFinderPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: separatedChildren(16, [
-                        DropdownMenu(
-                          errorText: validBreed ||
-                                  breedTextController.value.text.isEmpty
-                              ? null
-                              : 'Please select a valid breed',
-                          controller: breedTextController,
-                          onSelected: (breed) {
-                            setState(() {
-                              selectedBreed = breed;
-                            });
+                        FocusableActionDetector(
+                          onFocusChange: (focused) {
+                            if (focused) {
+                              setState(() {
+                                breedTextController.text = '';
+                              });
+                            }
                           },
-                          width: inputWidth,
-                          enableFilter: true,
-                          dropdownMenuEntries: buildBreeds(),
-                          label: const Text(
-                            'Breed',
+                          child: DropdownMenu(
+                            errorText: validBreed ||
+                                    breedTextController.value.text.isEmpty
+                                ? null
+                                : 'Please select a valid breed',
+                            controller: breedTextController,
+                            onSelected: (breed) {
+                              setState(() {
+                                selectedBreed = breed;
+                              });
+                            },
+                            width: inputWidth,
+                            enableFilter: true,
+                            dropdownMenuEntries: buildBreeds(),
+                            initialSelection: null,
+                            label: const Text(
+                              'Breed',
+                            ),
                           ),
                         ),
-                        DropdownMenu(
-                          onSelected: (subBreed) {
-                            setState(() {
-                              selectedSubBreed = subBreed;
-                            });
+                        FocusableActionDetector(
+                          onFocusChange: (focused) {
+                            if (focused) {
+                              setState(() {
+                                subBreedTextController.text = '';
+                              });
+                            }
                           },
-                          controller: subBreedTextController,
-                          enabled: subBreedOptions.isNotEmpty,
-                          errorText: validSubBreed
-                              ? null
-                              : 'Please select a valid sub-breed',
-                          width: inputWidth,
-                          enableFilter: true,
-                          dropdownMenuEntries: subBreedOptions,
-                          label: const Text(
-                            'Sub-breed',
+                          child: DropdownMenu(
+                            onSelected: (subBreed) {
+                              setState(() {
+                                selectedSubBreed = subBreed;
+                              });
+                            },
+                            controller: subBreedTextController,
+                            enabled: subBreedOptions.isNotEmpty,
+                            errorText: validSubBreed
+                                ? null
+                                : 'Please select a valid sub-breed',
+                            width: inputWidth,
+                            dropdownMenuEntries: subBreedOptions,
+                            label: const Text(
+                              'Sub-breed',
+                            ),
                           ),
                         ),
                         ElevatedButton(
-                          onPressed: validBreed && validSubBreed ? () {} : null,
+                          onPressed: validBreed && validSubBreed
+                              ? () {
+                                  setState(() {
+                                    loading = true;
+                                    dogSrc = null;
+                                    linkList = [];
+                                  });
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    randomImage
+                                        ? fetchDog(
+                                            selectedBreed, selectedSubBreed)
+                                        : fetchDogLinks(
+                                            selectedBreed, selectedSubBreed);
+                                  });
+                                }
+                              : null,
                           child: const Padding(
                             padding: EdgeInsets.all(
                               16,
@@ -163,7 +267,18 @@ class _DogFinderPageState extends State<DogFinderPage> {
                             ElevatedButton(
                                 onPressed: () {
                                   setState(() {
+                                    dogSrc = null;
                                     errorText = null;
+                                    loading = true;
+                                    selectedBreed = null;
+                                    selectedSubBreed = null;
+                                    breedTextController.text = '';
+                                    subBreedTextController.text = '';
+
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      fetchDogBreeds();
+                                    });
                                   });
                                 },
                                 child: const Text('Reset'))
@@ -175,35 +290,40 @@ class _DogFinderPageState extends State<DogFinderPage> {
                 ),
               ),
             ),
-            // child: Center(
-            //   child: SizedBox(
-            //     width: 300,
-            //     child: Column(
-            //       children: [
-            //         Text(errorText ?? ''),
-            //         Center(
-            //           child: ElevatedButton(
-            //             onPressed: () {},
-            //             child: const Text('Reset'),
-            //           ),
-            //         )
-            //       ],
-            //     ),
-            //   ),
-            // ),
+          ),
+          Visibility(
+            visible: loading,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: ColoredBox(
+                color: Colors.green.withOpacity(0.2),
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white),
+                    child: const SizedBox(
+                      width: 250,
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: RefreshProgressIndicator(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           )
         ],
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _incrementCounter,
-      //   tooltip: 'Increment',
-      //   child: const Icon(Icons.add),
-      // ),
     );
   }
 
   List<DropdownMenuEntry> buildBreeds() {
-    List<DropdownMenuEntry> entries = [];
+    List<DropdownMenuEntry> entries = [
+      const DropdownMenuEntry(value: null, label: 'Any')
+    ];
     for (var entry in dogBreeds.entries) {
       entries.add(
         DropdownMenuEntry(value: entry.key, label: entry.key),
@@ -249,41 +369,91 @@ class _DogFinderPageState extends State<DogFinderPage> {
 
   Future fetchDogBreeds() async {
     Map<String, List<String>> breeds = {};
-
-    final response =
-        await http.get(Uri.parse('https://dog.ceo/api/breeds/list/all'));
-
-    if (response.statusCode == 200) {
-      for (var entry in (jsonDecode(response.body)["message"] as Map).entries) {
-        breeds[entry.key] = (entry.value as List).cast<String>();
+    try {
+      final response =
+          await http.get(Uri.parse('https://dog.ceo/api/breeds/list/all'));
+      if (response.statusCode == 200) {
+        for (var entry
+            in (jsonDecode(response.body)["message"] as Map).entries) {
+          breeds[entry.key] = (entry.value as List).cast<String>();
+        }
+      } else {
+        errorText = 'Failed to fetch dog breeds';
+        loading = false;
       }
-    } else {
-      errorText = 'Failed to fetch dog breeds';
+      setState(() {
+        dogBreeds = breeds;
+        loading = false;
+      });
+    } catch (_) {
+      setState(() {
+        errorText = 'Failed to fetch dog breeds';
+        loading = false;
+      });
     }
-    dogBreeds = breeds;
   }
 
   Future fetchDog(String? breed, String? subBreed) async {
-    String url = 'https://dog.ceo/api/breeds/image/random';
+    try {
+      String url = 'https://dog.ceo/api/breeds/image/random';
 
-    if (breed != null) {
-      url = 'https://dog.ceo/api/breed/$breed/images/random';
-    }
+      if (breed != null) {
+        url = 'https://dog.ceo/api/breed/$breed/images/random';
+      }
 
-    if (subBreed != null) {
-      url = 'https://dog.ceo/api/breed/$breed/$subBreed/images/random';
-    }
-
-    final response =
-        await http.get(Uri.parse('https://dog.ceo/api/breeds/list/all'));
-
-    if (response.statusCode == 200) {
-      setState(() {
-        imageSrc = jsonDecode(response.body)["message"];
-      });
-    } else {
+      if (subBreed != null) {
+        url = 'https://dog.ceo/api/breed/$breed/$subBreed/images/random';
+      }
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        setState(() {
+          dogSrc = jsonDecode(response.body)["message"];
+          loading = false;
+        });
+      } else {
+        setState(() {
+          errorText = 'Failed to fetch image';
+          loading = false;
+        });
+      }
+    } catch (_) {
       setState(() {
         errorText = 'Failed to fetch image';
+        loading = false;
+      });
+    }
+  }
+
+  Future fetchDogLinks(String? breed, String? subBreed) async {
+    try {
+      String url = 'https://dog.ceo/api/breeds/image/random/10';
+
+      if (breed != null) {
+        url = 'https://dog.ceo/api/breed/$breed/images/random/10';
+      }
+
+      if (subBreed != null) {
+        url = 'https://dog.ceo/api/breed/$breed/$subBreed/images/random/10';
+      }
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        linkList.clear();
+        setState(() {
+          for (var link in jsonDecode(response.body)["message"]) {
+            linkList.add(link);
+          }
+          loading = false;
+        });
+      } else {
+        setState(() {
+          errorText = 'Failed to fetch image';
+          loading = false;
+        });
+      }
+    } catch (_) {
+      setState(() {
+        errorText = 'Failed to fetch image';
+        loading = false;
       });
     }
   }
