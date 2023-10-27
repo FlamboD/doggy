@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:js_interop';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -11,115 +15,191 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Dog Finder App',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const DogFinderPage(title: 'The Dog Finder'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+class DogFinderPage extends StatefulWidget {
+  const DogFinderPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DogFinderPage> createState() => _DogFinderPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DogFinderPageState extends State<DogFinderPage> {
+  String? imageSrc;
+  Map<String, List<String>> dogBreeds = {};
+  String? selectedBreed;
+  String? selectedSubBreed;
+  TextEditingController breedTextController = TextEditingController();
+  TextEditingController subBreedTextController = TextEditingController();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchDogBreeds();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    double inputWidth = 500;
+    List<DropdownMenuEntry> breedOptions = buildBreeds();
+    List<DropdownMenuEntry> subBreedOptions = buildSubBreeds();
+
+    bool validBreed = breedOptions
+        .where((element) => element.value == breedTextController.text)
+        .isNotEmpty;
+    bool validSubBreed = subBreedOptions.isEmpty ||
+        subBreedOptions
+            .where((element) => element.value == subBreedTextController.text)
+            .isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+          children: separatedChildren(
+            0,
+            [
+              Image.asset(
+                'DefaultDog.jpg',
+              ),
+              SizedBox(
+                width: inputWidth,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: separatedChildren(16, [
+                    DropdownMenu(
+                      errorText:
+                          validBreed || breedTextController.value.text.isEmpty
+                              ? null
+                              : 'Please select a valid breed',
+                      controller: breedTextController,
+                      onSelected: (breed) {
+                        setState(() {
+                          selectedBreed = breed;
+                        });
+                      },
+                      width: inputWidth,
+                      enableFilter: true,
+                      dropdownMenuEntries: buildBreeds(),
+                      label: const Text(
+                        'Breed',
+                      ),
+                    ),
+                    DropdownMenu(
+                      onSelected: (subBreed) {
+                        setState(() {
+                          selectedSubBreed = subBreed;
+                        });
+                      },
+                      controller: subBreedTextController,
+                      enabled: subBreedOptions.isNotEmpty,
+                      errorText: validSubBreed
+                          ? null
+                          : 'Please select a valid sub-breed',
+                      // inputDecorationTheme: subBreedOptions.isEmpty || subBreedTextController.value.text.isNotEmpty ? null : InputDecorationTheme(border: Border.all(color: Colors.red))),
+                      width: inputWidth,
+                      enableFilter: true,
+                      dropdownMenuEntries: subBreedOptions,
+                      label: const Text(
+                        'Sub-breed',
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: validBreed && validSubBreed ? () {} : null,
+                      child: const Padding(
+                        padding: EdgeInsets.all(
+                          16,
+                        ),
+                        child: Text('Dog searcher'),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _incrementCounter,
+      //   tooltip: 'Increment',
+      //   child: const Icon(Icons.add),
+      // ),
     );
+  }
+
+  List<DropdownMenuEntry> buildBreeds() {
+    List<DropdownMenuEntry> entries = [];
+    for (var entry in dogBreeds.entries) {
+      entries.add(
+        DropdownMenuEntry(value: entry.key, label: entry.key),
+      );
+    }
+    return entries;
+  }
+
+  List<DropdownMenuEntry> buildSubBreeds() {
+    if (selectedBreed == null) return [];
+    if (dogBreeds[selectedBreed] == null) return [];
+
+    List<DropdownMenuEntry> entries = [];
+    for (var breed in dogBreeds[selectedBreed]!) {
+      entries.add(
+        DropdownMenuEntry(value: breed, label: breed),
+      );
+    }
+    return entries;
+  }
+
+  List<Widget> separatedChildren(double space, List<Widget> children,
+      {Axis axis = Axis.vertical, bool applyToTartAndEnd = false}) {
+    List<Widget> spacedChildren = [];
+    if (applyToTartAndEnd) spacedChildren.add(spacer(space, axis));
+
+    for (int i in List.generate(children.length, (index) => index)) {
+      if (i != 0) spacedChildren.add(spacer(space, axis));
+      spacedChildren.add(children[i]);
+    }
+
+    if (applyToTartAndEnd) spacedChildren.add(spacer(space, axis));
+    return spacedChildren;
+  }
+
+  SizedBox spacer(double space, Axis axis) => SizedBox(
+        width: axis == Axis.horizontal ? space : 0,
+        height: axis == Axis.vertical ? space : 0,
+      );
+
+  Future fetchDogBreeds() async {
+    Map<String, List<String>> breeds = {};
+
+    final response =
+        await http.get(Uri.parse('https://dog.ceo/api/breeds/list/all'));
+
+    if (response.statusCode == 200) {
+      for (var entry in (jsonDecode(response.body)["message"] as Map).entries) {
+        breeds[entry.key] = (entry.value as List).cast<String>();
+      }
+    }
+
+    dogBreeds = breeds;
   }
 }
