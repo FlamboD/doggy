@@ -42,4 +42,5 @@ If the selected breed has sub-breeds available, the `Sub-breed` dropdown will be
 - [http: ^1.1.0](https://pub.dev/packages/http)
 
 > Developed by [FlamboD2000](https://github.com/FlamboD) for [this](https://github.com/andreaperinu/flutter-challenge) flutter challenge.
+>
 > Email: SkyeCodesThings@gmail.com
