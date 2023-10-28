@@ -30,18 +30,16 @@ You can also find images of specific images by selecting a dog breed in the `Bre
 
 If the selected breed has sub-breeds available, the `Sub-breed` dropdown will become enabled allowing you to select a sub-breed.
 
-## Tools used
+# Tools used
 
 - `Flutter` as the framework
 - `Android Studio` as the IDE
 - `https://dog.ceo/dog-api` for the breeds, images and links
 - `Git Hub` for versioning
 
-## Dart packages added
+# Dart packages added
 
 - [http: ^1.1.0](https://pub.dev/packages/http)
 
-Developed by [FlamboD2000](https://github.com/FlamboD) for [this](https://github.com/andreaperinu/flutter-challenge) flutter challenge.
-
-Contact:
-- Email: SkyeCodesThings@gmail.com
+> Developed by [FlamboD2000](https://github.com/FlamboD) for [this](https://github.com/andreaperinu/flutter-challenge) flutter challenge.
+> Email: SkyeCodesThings@gmail.com
