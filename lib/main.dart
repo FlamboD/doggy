@@ -103,7 +103,7 @@ class _DogFinderPageState extends State<DogFinderPage> {
                       controller: responseType,
                       width: inputWidth,
                       dropdownMenuEntries: const [
-                        DropdownMenuEntry(value: 'random', label: 'Random'),
+                        DropdownMenuEntry(value: 'random', label: 'Singular'),
                         DropdownMenuEntry(value: 'list', label: 'List'),
                       ],
                       label: const Text(
