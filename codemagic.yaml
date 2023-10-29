@@ -5,7 +5,7 @@ workflows:
     scripts:
       - name: Build Android APK
         working_directory: android
-        script: ./gradlew assembleRelease
+        script: flutter build apk
       - name: Add provisioning profiles
         script: |
           set -e # exit on first failed command
