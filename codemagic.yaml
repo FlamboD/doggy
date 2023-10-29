@@ -3,6 +3,8 @@ workflows:
     environment:
       java: 17
     scripts:
+      - name: upgrade flutter
+        script: flutter upgrade
       - name: Build Android APK
         working_directory: android
         script: flutter build apk
