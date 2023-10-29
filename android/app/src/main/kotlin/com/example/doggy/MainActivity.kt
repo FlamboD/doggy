@@ -1,4 +1,4 @@
-package com.example.doggy
+package com.skye.doggy
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -84,33 +83,24 @@ class _DogFinderPageState extends State<DogFinderPage> {
               children: separatedChildren(
                 8,
                 [
-                  FocusableActionDetector(
-                    onFocusChange: (focused) {
-                      if (focused) {
-                        setState(() {
-                          responseType.text = '';
-                        });
-                      }
+                  DropdownMenu(
+                    onSelected: (respType) {
+                      setState(() {
+                        if (respType != null) selectedResponseType = respType;
+                        dogSrc = null;
+                        linkList = [];
+                      });
                     },
-                    child: DropdownMenu(
-                      onSelected: (respType) {
-                        setState(() {
-                          if (respType != null) selectedResponseType = respType;
-                          dogSrc = null;
-                          linkList = [];
-                        });
-                      },
-                      controller: responseType,
-                      width: inputWidth,
-                      dropdownMenuEntries: const [
-                        DropdownMenuEntry(value: 'random', label: 'Singular'),
-                        DropdownMenuEntry(value: 'list', label: 'List'),
-                      ],
-                      label: const Text(
-                        'Response Type',
-                      ),
-                      initialSelection: selectedResponseType,
+                    controller: responseType,
+                    width: inputWidth,
+                    dropdownMenuEntries: const [
+                      DropdownMenuEntry(value: 'random', label: 'Singular'),
+                      DropdownMenuEntry(value: 'list', label: 'List'),
+                    ],
+                    label: const Text(
+                      'Response Type',
                     ),
+                    initialSelection: selectedResponseType,
                   ),
                   SizedBox(
                     width: 500,
@@ -157,32 +147,25 @@ class _DogFinderPageState extends State<DogFinderPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: separatedChildren(16, [
-                        FocusableActionDetector(
-                          onFocusChange: (focused) {
-                            if (focused) {
-                              setState(() {
-                                breedTextController.text = '';
-                              });
-                            }
+                        DropdownMenu(
+                          errorText: validBreed ||
+                                  breedTextController.value.text.isEmpty
+                              ? null
+                              : 'Please select a valid breed',
+                          controller: breedTextController,
+                          onSelected: (breed) {
+                            setState(() {
+                              selectedBreed = breed;
+                              selectedSubBreed = null;
+                              subBreedTextController.text = '';
+                            });
                           },
-                          child: DropdownMenu(
-                            errorText: validBreed ||
-                                    breedTextController.value.text.isEmpty
-                                ? null
-                                : 'Please select a valid breed',
-                            controller: breedTextController,
-                            onSelected: (breed) {
-                              setState(() {
-                                selectedBreed = breed;
-                              });
-                            },
-                            width: inputWidth,
-                            enableFilter: true,
-                            dropdownMenuEntries: buildBreeds(),
-                            initialSelection: null,
-                            label: const Text(
-                              'Breed',
-                            ),
+                          width: inputWidth,
+                          enableFilter: true,
+                          dropdownMenuEntries: buildBreeds(),
+                          initialSelection: null,
+                          label: const Text(
+                            'Breed',
                           ),
                         ),
                         FocusableActionDetector(
@@ -314,7 +297,7 @@ class _DogFinderPageState extends State<DogFinderPage> {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
